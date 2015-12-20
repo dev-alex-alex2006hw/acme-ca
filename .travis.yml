@@ -1,0 +1,59 @@
+language: go
+
+go:
+  - 1.5.2
+
+addons:
+  hosts:
+    - le.wtf
+  apt:
+    packages:
+      - lsb-release
+      - python-dev
+      - python-virtualenv
+      - gcc
+      - libaugeas0
+      - libssl-dev
+      - libffi-dev
+      - ca-certificates
+      - rsyslog
+  mariadb: "10.0"
+
+sudo: false
+
+services:
+  - rabbitmq
+
+matrix:
+  fast_finish: true
+
+# Only build pushes to the master branch, PRs, and branches beginning with
+# `test-`. You should not push branches beginning with `test-` to the
+# letsencrypt repository, but this is a convenient way to push branches to your
+# own fork of the repostiroy to ensure Travis passes before submitting a PR.
+# For instance, you might run:
+# git push myremote branchname:test-branchname
+branches:
+  only:
+    - master
+    - /^test-.*$/
+
+before_install:
+  - travis_retry test/travis-before-install.sh
+
+# Override default Travis install command to prevent it from adding
+# Godeps/_workspace to GOPATH. When that happens, it hides failures that should
+# arise from importing non-vendorized paths.
+install:
+  - true
+
+env:
+  global:
+    - LETSENCRYPT_PATH=$HOME/letsencrypt
+  matrix:
+    - RUN="integration vet lint fmt migrations"
+    - RUN="unit"
+
+script:
+  - bash test.sh
+
